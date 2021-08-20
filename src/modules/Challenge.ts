@@ -47,12 +47,24 @@ export class Challenge {
             const diceCompletion = completion.map(e => this.dices[e])
             return [diceCombi, diceCompletion]
         })
+        .filter(c => {
+            const whiteFacesLeft = c[0].filter(dFace => dFace < 6)
+            const whiteFacesRight = c[1].filter(dFace => dFace < 6)
+            let isAnimalGreyCompatible = 
+                ![...c[0], ...c[1]].includes(DiceFace.Animal_Grey_Wech)
+                ||(c[0].includes(DiceFace.Animal_Grey_Wech) && whiteFacesLeft.length < whiteFacesRight.length)
+                || (c[1].includes(DiceFace.Animal_Grey_Wech) && whiteFacesRight.length < whiteFacesLeft.length)
+            
+            let isPinkAnimalCompatible =
+                ![...c[0], ...c[1]].includes(DiceFace.Animal_Pink_Keh)
+                || (c[0].includes(DiceFace.Animal_Pink_Keh) && whiteFacesLeft.length > whiteFacesRight.length)
+                || (c[1].includes(DiceFace.Animal_Pink_Keh) && whiteFacesRight.length > whiteFacesLeft.length)
+            
+            return isAnimalGreyCompatible && isPinkAnimalCompatible
+        })
 
         let i = 0
-        while(
-            i < partsCombinations.length &&
-            this.getTotal(partsCombinations[i][0], partsCombinations[i][1]) !== this.getTotal(partsCombinations[i][1], partsCombinations[i][0])
-        ){
+        while(i < partsCombinations.length && this.getTotal(partsCombinations[i][0], partsCombinations[i][1]) !== this.getTotal(partsCombinations[i][1], partsCombinations[i][0])){
             i++
         }
 
@@ -72,7 +84,7 @@ export class Challenge {
                 return 2
             }
             else if(face === DiceFace.Orange_AhTsIb){
-                return part.length % 2 === 0 ? 2 : 1 
+                return part.filter(dFace => dFace < 6).length % 2 === 0 ? 2 : 1 
             }
             else if(face === DiceFace.Blue_Way){
                 return otherPart.filter(dFace => dFace < 6).length
@@ -84,19 +96,71 @@ export class Challenge {
                 return 3
             }
             else {
-                console.error('not handled dice face', face)
-                return 0
+                return null
             }
         })
-
-        console.log()
+        .filter(s => s !== null) as number[]
+        // console.log('scores', scores)
 
         if(part.includes(DiceFace.Pink_IxAhau)){
             const scoresToHandle = scores.filter((v, i) => part[i] !== DiceFace.Pink_IxAhau)
             const minimalValue = Math.min(...scoresToHandle)
-            scores = scores.filter((v, i) => part[i] === DiceFace.Pink_IxAhau || v !== minimalValue)
+            scores = scores.map((v, i) => (part[i] === DiceFace.Pink_IxAhau || v !== minimalValue) ? v : 0)
         }
+        // console.log('scores after pink', scores)
 
+        const animals = part.filter(df => df >= 6)
+        animals.forEach(animal => {
+            if(animal === DiceFace.Animal_Grey_Wech){
+                scores = scores.map((v, i) => part[i] < 6 ? v + 1 : v)
+            }
+            // console.log('scores after animal grey', scores)
+
+            if(animal === DiceFace.Animal_Pink_Keh){
+                scores = scores.map((v, i) => part[i] < 6 ? v - 1 : v)
+            }
+            // console.log('scores after animal pink', scores)
+            
+            if(animal === DiceFace.Animal_Green_Huh){            
+                const uniqDiceFaceIndex = part
+                    .reduce( (uniqDices: number[], dFace, i) =>  
+                        (dFace < 6 && part.filter(df => df ===dFace).length === 1) 
+                        ? [...uniqDices, i] 
+                        : uniqDices
+                    , [] )
+                scores = scores.map((e, i) => uniqDiceFaceIndex.indexOf(i) !== -1 ? e + 1 : e)
+            }  
+            // console.log('scores after animal green', scores)
+            
+            if(animal === DiceFace.Animal_Yellow_SinaAn){
+                const uniqDiceFaceIndex = part
+                    .reduce( (uniqDices: number[], dFace, i) =>  
+                        (dFace < 6 && part.filter(df => df ===dFace).length === 1) 
+                            ? [...uniqDices, i] 
+                            : uniqDices
+                        , []
+                    )
+                scores = scores.map((e, i) => uniqDiceFaceIndex.indexOf(i) !== -1 ? e - 1 : e)
+            }
+            // console.log('scores after animal yellow', scores)
+            
+            if(animal === DiceFace.Animal_Blue_Balam){
+                const max = Math.max(...scores)
+                const min = Math.min(...scores)
+                const minIndex = scores.findIndex(e => e === min)
+                scores[minIndex] = max
+            }
+            // console.log('scores after animal blue', scores)
+            
+            if(animal === DiceFace.Animal_Orange_Kab){            
+                const min = Math.min(...scores)
+                const max = Math.max(...scores)
+                const maxIndex = scores.findIndex(e => e === max)
+                scores[maxIndex] = min
+            }
+            // console.log('scores after animal orange', scores)
+        })
+        
         return scores.reduce( (sum, score) => sum + score, 0)
     }
 
