@@ -1,4 +1,4 @@
-import { DiceFace, Side } from "./definitions";
+import { DiceFaceCoba as DiceFace, Side } from "./definitions";
 
 export class Challenge {
 
